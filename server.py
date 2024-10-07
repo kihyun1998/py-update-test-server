@@ -20,6 +20,23 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"filename": latest_file}).encode())
             else:
                 self.wfile.write(json.dumps({"error": "No update file found"}).encode())
+        elif self.path == '/update/file':
+            update_folder = 'update'
+            files = os.listdir(update_folder)
+            zip_files = [f for f in files if f.endswith('.zip')]
+            if zip_files:
+                latest_file = max(zip_files, key=lambda f: os.path.getmtime(os.path.join(update_folder, f)))
+                file_path = os.path.join(update_folder, latest_file)
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/zip')
+                self.send_header('Content-Disposition', f'attachment; filename="{latest_file}"')
+                self.end_headers()
+                
+                with open(file_path, 'rb') as file:
+                    self.wfile.write(file.read())
+            else:
+                self.send_error(404, "No update file found")
         else:
             super().do_GET()
 
